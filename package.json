@@ -1,0 +1,22 @@
+{
+  "name": "vk-mini-app-game",
+  "version": "1.0.0",
+  "description": "VKontakte Mini App Game with VK Bridge SDK",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx live-server --port=8080 --open=index.html"
+  },
+  "keywords": [
+    "vk",
+    "vkontakte",
+    "game",
+    "mini-app",
+    "html5",
+    "canvas"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
