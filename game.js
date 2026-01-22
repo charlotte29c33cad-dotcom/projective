@@ -130,6 +130,87 @@ let shopItems = [
 
 let equippedWeapon = null;
 
+// Save progress to localStorage
+function saveProgress() {
+    const progress = {
+        character: {
+            level: character.level,
+            exp: character.exp,
+            expToNextLevel: character.expToNextLevel,
+            hp: character.hp,
+            maxHp: character.maxHp,
+            statPoints: character.statPoints,
+            stats: { ...character.stats }
+        },
+        playerGold: playerGold,
+        boss1KillCount: boss1KillCount,
+        boss2Locked: boss2.locked,
+        shopItems: shopItems.map(item => ({
+            id: item.id,
+            owned: item.owned,
+            count: item.count || 0
+        })),
+        equippedWeaponId: equippedWeapon ? equippedWeapon.id : null
+    };
+    localStorage.setItem('vk_game_progress', JSON.stringify(progress));
+    console.log('Progress saved');
+}
+
+// Load progress from localStorage
+function loadProgress() {
+    const saved = localStorage.getItem('vk_game_progress');
+    if (!saved) return false;
+    
+    try {
+        const progress = JSON.parse(saved);
+        
+        // Restore character
+        character.level = progress.character.level;
+        character.exp = progress.character.exp;
+        character.expToNextLevel = progress.character.expToNextLevel;
+        character.hp = progress.character.hp;
+        character.maxHp = progress.character.maxHp;
+        character.statPoints = progress.character.statPoints;
+        character.stats = { ...progress.character.stats };
+        
+        // Restore economy
+        playerGold = progress.playerGold;
+        boss1KillCount = progress.boss1KillCount;
+        boss2.locked = progress.boss2Locked;
+        if (!boss2.locked) boss2.alive = true;
+        
+        // Restore shop items
+        progress.shopItems.forEach(saved => {
+            const item = shopItems.find(i => i.id === saved.id);
+            if (item) {
+                item.owned = saved.owned;
+                item.count = saved.count || 0;
+            }
+        });
+        
+        // Restore equipped weapon
+        if (progress.equippedWeaponId) {
+            const weapon = shopItems.find(i => i.id === progress.equippedWeaponId);
+            if (weapon && weapon.owned) {
+                equippedWeapon = weapon;
+            }
+        }
+        
+        console.log('Progress loaded');
+        return true;
+    } catch (error) {
+        console.error('Failed to load progress:', error);
+        return false;
+    }
+}
+
+// Clear progress (for testing or reset)
+function clearProgress() {
+    localStorage.removeItem('vk_game_progress');
+    console.log('Progress cleared');
+    location.reload();
+}
+
 // Initialize VK Bridge
 async function initVK() {
     try {
@@ -502,6 +583,7 @@ function attackEnemy(enemy) {
                         boss2.alive = true;
                         addDamageAnimation(canvas.width / 2, canvas.height / 2 - 20, 'Новое испытание открыто!', '#ffd700');
                     }
+                    saveProgress();
                 }
 
                 // Show victory messages
@@ -618,6 +700,7 @@ function buyItem(item) {
         }
     }
     updateScore();
+    saveProgress();
 }
 
 // Equip weapon
@@ -625,6 +708,7 @@ function equipWeapon(item) {
     if (!item.owned || item.type !== 'weapon') return;
     
     equippedWeapon = item;
+    saveProgress();
 }
 
 // Calculate weapon bonus damage
@@ -1004,6 +1088,7 @@ function gainExperience(amount) {
     }
     
     updateScore();
+    saveProgress();
 }
 
 // Increase stat
@@ -1018,6 +1103,7 @@ function increaseStat(statKey) {
             character.maxHp += hpIncrease;
             character.hp += hpIncrease;
         }
+        saveProgress();
     }
 }
 
@@ -1389,6 +1475,7 @@ window.addEventListener('load', () => {
     console.log('Context:', ctx);
     
     initVK();
+    loadProgress(); // Load saved progress
     setupCanvas();
     updateScore();
     
