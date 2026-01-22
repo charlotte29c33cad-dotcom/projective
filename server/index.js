@@ -8,19 +8,41 @@ const cors = require('cors');
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize Firebase Admin SDK using Application Default Credentials.
-// Set GOOGLE_APPLICATION_CREDENTIALS to the path of your service account JSON file.
+// Initialize Firebase Admin SDK
+// Supports multiple methods:
+// 1. GOOGLE_APPLICATION_CREDENTIALS env var pointing to JSON file
+// 2. Individual env vars: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
 try {
   if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-      // Optional: set databaseURL via env var if needed
-      databaseURL: process.env.FIREBASE_DATABASE_URL || undefined,
-    });
-    console.log('✅ Firebase Admin initialized');
+    let credential;
+    
+    // Try inline credentials first (easier for Render)
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      console.log('Using inline Firebase credentials from env vars');
+      credential = admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      });
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      console.log('Using Firebase credentials from file:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+      credential = admin.credential.applicationDefault();
+    } else {
+      console.error('⚠️ No Firebase credentials found! Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
+      // Continue anyway for health check endpoint
+      credential = null;
+    }
+
+    if (credential) {
+      admin.initializeApp({
+        credential: credential,
+        databaseURL: process.env.FIREBASE_DATABASE_URL || undefined,
+      });
+      console.log('✅ Firebase Admin initialized successfully');
+    }
   }
 } catch (err) {
-  console.error('Failed to initialize Firebase Admin:', err);
+  console.error('❌ Failed to initialize Firebase Admin:', err.message);
 }
 
 // Root endpoint

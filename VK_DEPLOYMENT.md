@@ -57,9 +57,23 @@
 
 ### 3.3 Добавление переменных окружения
 
-В разделе **Environment Variables** добавьте:
+В разделе **Environment Variables** добавьте переменные из вашего Firebase Service Account JSON файла:
 
-**Вариант 1: Service Account как JSON**
+**Рекомендуемый способ - Inline credentials:**
+
+Откройте скачанный JSON файл и скопируйте значения в переменные окружения:
+
+```
+FIREBASE_PROJECT_ID=vkontakteproject-c6c76
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@vkontakteproject-c6c76.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBg...(весь ключ)...\n-----END PRIVATE KEY-----\n
+```
+
+⚠️ **Важно для FIREBASE_PRIVATE_KEY:**
+- Скопируйте весь ключ включая `-----BEGIN PRIVATE KEY-----` и `-----END PRIVATE KEY-----`
+- Все переносы строк `\n` должны остаться как есть (не удаляйте их!)
+
+**Альтернативный способ - Secret File (сложнее):**
 ```
 GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/serviceAccountKey.json
 ```
