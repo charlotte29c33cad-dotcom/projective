@@ -1310,18 +1310,12 @@ function draw() {
         ctx.strokeText('⚔️ БОЙ ⚔️', canvas.width / 2, cy + 21);
         ctx.fillText('⚔️ БОЙ ⚔️', canvas.width / 2, cy + 21);
 
-        // Draw potion button if player has at least one health potion and hasn't used it this combat
+        // Draw potion button at bottom-left during combat (single button)
         const potion = getHealthPotion();
-        const btnX = canvas.width / 2 + 70;
-        const btnY = cy;
-        const btnW = 40;
-        const btnH = 36;
-
-        // Backup button near character icon (visible on left side)
-        const backupBtnX = characterIconBounds.x;
-        const backupBtnY = characterIconBounds.y + characterIconBounds.height + 8;
-        const backupBtnW = 48;
-        const backupBtnH = 36;
+        const btnW = 48;
+        const btnH = 40;
+        const btnX = 18; // left padding
+        const btnY = canvas.height - btnH - 18; // bottom padding
 
         if (potion && (potion.count || 0) > 0 && !potionUsedInCurrentCombat) {
             const pg = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnH);
@@ -1341,33 +1335,11 @@ function draw() {
 
             // Draw count badge
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(btnX + btnW - 16, btnY + btnH - 16, 18, 16);
+            ctx.fillRect(btnX + btnW - 18, btnY + btnH - 18, 20, 16);
             ctx.fillStyle = '#fff';
             ctx.font = '12px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(`${potion.count}`, btnX + btnW - 7, btnY + btnH - 5);
-            // Draw backup button near character icon too
-            ctx.save();
-            const bg = ctx.createLinearGradient(backupBtnX, backupBtnY, backupBtnX, backupBtnY + backupBtnH);
-            bg.addColorStop(0, '#ffb74d');
-            bg.addColorStop(1, '#ff9800');
-            ctx.fillStyle = bg;
-            ctx.fillRect(backupBtnX, backupBtnY, backupBtnW, backupBtnH);
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(backupBtnX, backupBtnY, backupBtnW, backupBtnH);
-            ctx.fillStyle = '#fff';
-            ctx.font = '18px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(potion.icon || '🧪', backupBtnX + backupBtnW / 2, backupBtnY + backupBtnH / 2);
-            // small count badge
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(backupBtnX + backupBtnW - 18, backupBtnY + backupBtnH - 18, 20, 16);
-            ctx.fillStyle = '#fff';
-            ctx.font = '12px Arial';
-            ctx.fillText(`${potion.count}`, backupBtnX + backupBtnW - 8, backupBtnY + backupBtnH - 6);
-            ctx.restore();
+            ctx.fillText(`${potion.count}`, btnX + btnW - 8, btnY + btnH - 5);
         } else {
             // Draw disabled hint if no potion or already used
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
@@ -1426,26 +1398,15 @@ function handleCanvasClick(x, y) {
         return;
     }
 
-    // If in combat, check for potion button click (to use during fight)
+    // If in combat, check for potion button click (bottom-left)
     const potion = getHealthPotion();
-    const potionBtnX = canvas.width / 2 + 70;
-    const potionBtnY = getCombatY();
-    const potionBtnW = 40;
-    const potionBtnH = 36;
+    const potionBtnW = 48;
+    const potionBtnH = 40;
+    const potionBtnX = 18;
+    const potionBtnY = canvas.height - potionBtnH - 18;
     if (inCombat && potion && (potion.count || 0) > 0 && !potionUsedInCurrentCombat &&
         x >= potionBtnX && x <= potionBtnX + potionBtnW &&
         y >= potionBtnY && y <= potionBtnY + potionBtnH) {
-        useHealthPotion();
-        return;
-    }
-    // Also accept clicks on the backup potion button near character icon
-    const backupBtnX = characterIconBounds.x;
-    const backupBtnY = characterIconBounds.y + characterIconBounds.height + 8;
-    const backupBtnW = 48;
-    const backupBtnH = 36;
-    if (inCombat && potion && (potion.count || 0) > 0 && !potionUsedInCurrentCombat &&
-        x >= backupBtnX && x <= backupBtnX + backupBtnW &&
-        y >= backupBtnY && y <= backupBtnY + backupBtnH) {
         useHealthPotion();
         return;
     }
