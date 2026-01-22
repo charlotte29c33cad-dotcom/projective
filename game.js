@@ -6,7 +6,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 
 // Temporary fillRect logger (toggle with ENABLE_FILLRECT_LOGGER)
-const ENABLE_FILLRECT_LOGGER = false; // set to true to enable
+const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
 if (ENABLE_FILLRECT_LOGGER && ctx) {
     (function() {
         const _origFillRect = ctx.fillRect.bind(ctx);
@@ -1348,37 +1348,7 @@ function draw() {
         }
     }
     
-    // Instructions
-    if (!showCharacterPanel && !showShopPanel && !inCombat) {
-        const textWidth = 280;
-        const textHeight = 44;
-        const textX = canvas.width / 2 - textWidth / 2;
-        const textY = canvas.height - 60;
-        
-        // Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.fillRect(textX + 2, textY + 2, textWidth, textHeight);
-        
-        // Background with gradient
-        const gradient = ctx.createLinearGradient(textX, textY, textX, textY + textHeight);
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
-        gradient.addColorStop(1, 'rgba(20, 20, 40, 0.85)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(textX, textY, textWidth, textHeight);
-        
-        // Border
-        ctx.strokeStyle = 'rgba(102, 126, 234, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(textX, textY, textWidth, textHeight);
-        
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.strokeText('Кликните по боссу для атаки', canvas.width / 2, textY + 27);
-        ctx.fillText('Кликните по боссу для атаки', canvas.width / 2, textY + 27);
-    }
+    // Instructions removed (UI cleaned)
 }
 
 // Game loop
