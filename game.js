@@ -299,6 +299,14 @@ function setupCanvas() {
 
     boss2.x = canvas.width * 0.85 - boss2.width / 2;
     boss2.y = canvas.height / 2 - boss2.height / 2;
+
+    // Position UI icons relative to top-left (profile and shop)
+    // Keep them fixed in the corner so they don't depend on character coordinates
+    characterIconBounds.x = 20;
+    characterIconBounds.y = 20;
+    // Place shop icon below the profile icon
+    shopIconBounds.x = characterIconBounds.x;
+    shopIconBounds.y = characterIconBounds.y + characterIconBounds.height + 10;
 }
 
 // Draw character icon
@@ -405,13 +413,7 @@ function drawCharacter() {
     ctx.fillStyle = '#667eea';
     ctx.fillRect(character.x, character.y, character.width, character.height);
     
-    // Character face
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 40px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🧙', character.x + character.width / 2, 
-                 character.y + character.height / 2);
+    // Character face removed (icon moved to profile area)
     
     // Show equipped weapon icon
     if (equippedWeapon) {
