@@ -413,37 +413,47 @@ function drawCharacter() {
     ctx.fillText('🧙', character.x + character.width / 2, 
                  character.y + character.height / 2);
     
-    // Name and level above character
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 3;
-    ctx.font = 'bold 16px Arial';
-    ctx.strokeText(`${character.name} [Ур.${character.level}]`, 
-                   character.x + character.width / 2, character.y - 10);
-    ctx.fillText(`${character.name} [Ур.${character.level}]`, 
-                 character.x + character.width / 2, character.y - 10);
-    
-    // HP bar
-    const hpBarWidth = character.width;
-    const hpBarHeight = 8;
-    const hpPercent = character.hp / character.maxHp;
-    
-    ctx.fillStyle = '#333';
-    ctx.fillRect(character.x, character.y + character.height + 5, hpBarWidth, hpBarHeight);
-    ctx.fillStyle = character.hp < character.maxHp * 0.3 ? '#f44336' : '#4caf50';
-    ctx.fillRect(character.x, character.y + character.height + 5, hpBarWidth * hpPercent, hpBarHeight);
-    
-    // HP text
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Arial';
-    ctx.fillText(`${character.hp}/${character.maxHp}`, character.x + character.width / 2, character.y + character.height + 25);
-    
     // Show equipped weapon icon
     if (equippedWeapon) {
         ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'right';
         ctx.fillText(equippedWeapon.icon, character.x - 10, character.y + 20);
     }
+    
+    // Draw HP bar and info near character icon in top-left corner
+    const hpBarX = 90; // Right of character icon
+    const hpBarY = 25;
+    const hpBarWidth = 150;
+    const hpBarHeight = 20;
+    const hpPercent = character.hp / character.maxHp;
+    
+    // HP bar background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
+    
+    // HP bar fill
+    ctx.fillStyle = character.hp < character.maxHp * 0.3 ? '#f44336' : '#4caf50';
+    ctx.fillRect(hpBarX, hpBarY, hpBarWidth * hpPercent, hpBarHeight);
+    
+    // HP bar border
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
+    
+    // HP text
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.strokeText(`${character.hp}/${character.maxHp} HP`, hpBarX + hpBarWidth / 2, hpBarY + hpBarHeight / 2 + 5);
+    ctx.fillText(`${character.hp}/${character.maxHp} HP`, hpBarX + hpBarWidth / 2, hpBarY + hpBarHeight / 2 + 5);
+    
+    // Level and name
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 14px Arial';
+    ctx.strokeText(`${character.name} [Ур.${character.level}]`, hpBarX, hpBarY + hpBarHeight + 18);
+    ctx.fillText(`${character.name} [Ур.${character.level}]`, hpBarX, hpBarY + hpBarHeight + 18);
 }
 
 // Draw boss
