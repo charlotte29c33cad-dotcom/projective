@@ -156,8 +156,12 @@ function saveProgress() {
     try {
         localStorage.setItem('vk_game_progress', JSON.stringify(progress));
         console.log('💾 Progress saved!', { level: character.level, gold: playerGold });
+        updateDebugPanel();
+        return true;
     } catch (error) {
         console.error('❌ Save failed:', error);
+        alert('Ошибка сохранения: ' + error.message);
+        return false;
     }
 }
 
@@ -210,10 +214,41 @@ function loadProgress() {
             boss1Kills: boss1KillCount,
             boss2Unlocked: !boss2.locked
         });
+        updateDebugPanel();
         return true;
     } catch (error) {
         console.error('❌ Failed to load progress:', error);
         return false;
+    }
+}
+
+// Update debug panel
+function updateDebugPanel() {
+    const panel = document.getElementById('debug-panel');
+    if (!panel) return;
+    
+    try {
+        const test = localStorage.getItem('vk_game_progress');
+        document.getElementById('ls-status').textContent = test ? '✅ Working' : '⚠️ Empty';
+        document.getElementById('ls-status').style.color = test ? '#0f0' : '#ff0';
+    } catch (e) {
+        document.getElementById('ls-status').textContent = '❌ Blocked';
+        document.getElementById('ls-status').style.color = '#f00';
+    }
+    
+    const saved = localStorage.getItem('vk_game_progress');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            const date = new Date(data.timestamp);
+            document.getElementById('last-save').textContent = date.toLocaleTimeString();
+            document.getElementById('debug-level').textContent = data.character.level;
+        } catch (e) {
+            document.getElementById('last-save').textContent = 'error';
+        }
+    } else {
+        document.getElementById('last-save').textContent = 'never';
+        document.getElementById('debug-level').textContent = '?';
     }
 }
 
@@ -1502,6 +1537,27 @@ window.addEventListener('load', () => {
     loadProgress(); // Load saved progress
     setupCanvas();
     updateScore();
+    updateDebugPanel();
+    
+    // Show debug panel for 5 seconds, then hide
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel) {
+        debugPanel.style.display = 'block';
+        setTimeout(() => {
+            debugPanel.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Toggle debug panel with 'D' key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') {
+            const panel = document.getElementById('debug-panel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                if (panel.style.display === 'block') updateDebugPanel();
+            }
+        }
+    });
     
     console.log('Starting game loop...');
     if (ctx) gameLoop();
