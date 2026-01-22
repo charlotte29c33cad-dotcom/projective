@@ -150,16 +150,24 @@ function saveProgress() {
             owned: item.owned,
             count: item.count || 0
         })),
-        equippedWeaponId: equippedWeapon ? equippedWeapon.id : null
+        equippedWeaponId: equippedWeapon ? equippedWeapon.id : null,
+        timestamp: Date.now()
     };
-    localStorage.setItem('vk_game_progress', JSON.stringify(progress));
-    console.log('Progress saved');
+    try {
+        localStorage.setItem('vk_game_progress', JSON.stringify(progress));
+        console.log('💾 Progress saved!', { level: character.level, gold: playerGold });
+    } catch (error) {
+        console.error('❌ Save failed:', error);
+    }
 }
 
 // Load progress from localStorage
 function loadProgress() {
     const saved = localStorage.getItem('vk_game_progress');
-    if (!saved) return false;
+    if (!saved) {
+        console.log('ℹ️ No saved progress found. Starting new game.');
+        return false;
+    }
     
     try {
         const progress = JSON.parse(saved);
@@ -196,10 +204,15 @@ function loadProgress() {
             }
         }
         
-        console.log('Progress loaded');
+        console.log('✅ Progress loaded successfully!', {
+            level: character.level,
+            gold: playerGold,
+            boss1Kills: boss1KillCount,
+            boss2Unlocked: !boss2.locked
+        });
         return true;
     } catch (error) {
-        console.error('Failed to load progress:', error);
+        console.error('❌ Failed to load progress:', error);
         return false;
     }
 }
@@ -680,6 +693,7 @@ function useHealthPotion() {
 
     addDamageAnimation(character.x + character.width / 2, character.y - 10, `+${character.hp - prevHp} HP`, '#4caf50');
     updateScore();
+    saveProgress();
 }
 
 // Buy item from shop
@@ -1108,9 +1122,19 @@ function increaseStat(statKey) {
 }
 
 // Update game state
+let lastAutoSave = Date.now();
+const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+
 function update() {
     // Здесь будет игровая логика (бой с монстрами, квесты и т.д.)
     updateDamageAnimations();
+    
+    // Auto-save every 30 seconds
+    const now = Date.now();
+    if (now - lastAutoSave >= AUTO_SAVE_INTERVAL) {
+        saveProgress();
+        lastAutoSave = now;
+    }
 }
 
 // Draw everything
