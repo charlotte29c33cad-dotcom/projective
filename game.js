@@ -480,38 +480,67 @@ function drawCharacter() {
 function drawBoss() {
     // Draw first boss
     if (boss.alive) {
-        // Boss body
-        ctx.fillStyle = boss.hp < boss.maxHp * 0.3 ? '#d32f2f' : '#8b0000';
-        ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+        // Draw a circular monster with gradient, eyes and mouth
+        const cx = boss.x + boss.width / 2;
+        const cy = boss.y + boss.height / 2;
+        const r = Math.max(boss.width, boss.height) / 2;
 
-        // Boss face
+        // Body gradient
+        const g = ctx.createRadialGradient(cx - r/3, cy - r/3, r*0.1, cx, cy, r);
+        if (boss.hp < boss.maxHp * 0.3) {
+            g.addColorStop(0, '#ff8a80');
+            g.addColorStop(1, '#b71c1c');
+        } else {
+            g.addColorStop(0, '#ffcc80');
+            g.addColorStop(1, '#8b0000');
+        }
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer stroke
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Eyes
+        const eyeOffsetX = r * 0.4;
+        const eyeOffsetY = r * -0.15;
+        const eyeR = Math.max(3, r * 0.15);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 50px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('👹', boss.x + boss.width / 2, boss.y + boss.height / 2);
+        ctx.beginPath(); ctx.arc(cx - eyeOffsetX, cy + eyeOffsetY, eyeR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + eyeOffsetX, cy + eyeOffsetY, eyeR, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#111';
+        ctx.beginPath(); ctx.arc(cx - eyeOffsetX, cy + eyeOffsetY, eyeR*0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + eyeOffsetX, cy + eyeOffsetY, eyeR*0.45, 0, Math.PI * 2); ctx.fill();
 
-        // Boss name and level
+        // Mouth (angry)
+        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy + r*0.2, r*0.4, Math.PI*0.15, Math.PI*0.85, false);
+        ctx.stroke();
+
+        // Name and level
         ctx.fillStyle = '#fff';
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 3;
-        ctx.font = 'bold 16px Arial';
-        ctx.strokeText(`${boss.name} [Ур.${boss.level}]`, 
-                       boss.x + boss.width / 2, boss.y - 10);
-        ctx.fillText(`${boss.name} [Ур.${boss.level}]`, 
-                     boss.x + boss.width / 2, boss.y - 10);
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.strokeText(`${boss.name} [Ур.${boss.level}]`, cx, boss.y - 8);
+        ctx.fillText(`${boss.name} [Ур.${boss.level}]`, cx, boss.y - 8);
 
-        // HP bar
+        // HP bar below
         const hpBarWidth = boss.width;
         const hpBarHeight = 8;
         const hpPercent = boss.hp / boss.maxHp;
-
         ctx.fillStyle = '#333';
         ctx.fillRect(boss.x, boss.y + boss.height + 5, hpBarWidth, hpBarHeight);
         ctx.fillStyle = '#4caf50';
         ctx.fillRect(boss.x, boss.y + boss.height + 5, hpBarWidth * hpPercent, hpBarHeight);
-
-        // HP text
         ctx.fillStyle = '#fff';
         ctx.font = '12px Arial';
         ctx.fillText(`${boss.hp}/${boss.maxHp}`, boss.x + boss.width / 2, boss.y + boss.height + 25);
@@ -519,34 +548,51 @@ function drawBoss() {
 
     // Draw second boss (locked / unlocked)
     if (boss2) {
+        const cx2 = boss2.x + boss2.width / 2;
+        const cy2 = boss2.y + boss2.height / 2;
+        const r2 = Math.max(boss2.width, boss2.height) / 2;
+
         if (boss2.locked) {
-            // show locked silhouette
+            // locked circular silhouette with lock
             ctx.fillStyle = 'rgba(100,100,100,0.35)';
-            ctx.fillRect(boss2.x, boss2.y, boss2.width, boss2.height);
+            ctx.beginPath(); ctx.arc(cx2, cy2, r2, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 40px Arial';
+            ctx.font = 'bold 28px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('🔒', boss2.x + boss2.width / 2, boss2.y + boss2.height / 2);
+            ctx.fillText('🔒', cx2, cy2);
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 14px Arial';
             ctx.fillText('Закрыт', boss2.x + boss2.width / 2, boss2.y - 10);
         } else if (boss2.alive) {
-            ctx.fillStyle = boss2.hp < boss2.maxHp * 0.3 ? '#b71c1c' : '#5d0000';
-            ctx.fillRect(boss2.x, boss2.y, boss2.width, boss2.height);
+            // body gradient
+            const g2 = ctx.createRadialGradient(cx2 - r2/3, cy2 - r2/3, r2*0.1, cx2, cy2, r2);
+            g2.addColorStop(0, '#ffd180');
+            g2.addColorStop(1, '#5d0000');
+            ctx.fillStyle = g2;
+            ctx.beginPath(); ctx.arc(cx2, cy2, r2, 0, Math.PI*2); ctx.fill();
 
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 50px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('💀', boss2.x + boss2.width / 2, boss2.y + boss2.height / 2);
+            // stroke
+            ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+            ctx.beginPath(); ctx.arc(cx2, cy2, r2 - 1.5, 0, Math.PI*2); ctx.stroke();
 
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 3;
-            ctx.font = 'bold 16px Arial';
-            ctx.strokeText(`${boss2.name} [Ур.${boss2.level}]`, boss2.x + boss2.width / 2, boss2.y - 10);
-            ctx.fillText(`${boss2.name} [Ур.${boss2.level}]`, boss2.x + boss2.width / 2, boss2.y - 10);
+            // skull-like eyes (hollow)
+            const eyeOffsetX2 = r2 * 0.35;
+            const eyeOffsetY2 = r2 * -0.1;
+            const eyeR2 = Math.max(3, r2 * 0.14);
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.arc(cx2 - eyeOffsetX2, cy2 + eyeOffsetY2, eyeR2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx2 + eyeOffsetX2, cy2 + eyeOffsetY2, eyeR2, 0, Math.PI*2); ctx.fill();
+
+            // mouth line
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(cx2 - r2*0.25, cy2 + r2*0.25); ctx.lineTo(cx2 + r2*0.25, cy2 + r2*0.25); ctx.stroke();
+
+            // name and hp
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+            ctx.strokeText(`${boss2.name} [Ур.${boss2.level}]`, cx2, boss2.y - 10);
+            ctx.fillText(`${boss2.name} [Ур.${boss2.level}]`, cx2, boss2.y - 10);
 
             const hpBarWidth2 = boss2.width;
             const hpBarHeight2 = 8;
@@ -556,8 +602,7 @@ function drawBoss() {
             ctx.fillStyle = '#4caf50';
             ctx.fillRect(boss2.x, boss2.y + boss2.height + 5, hpBarWidth2 * hpPercent2, hpBarHeight2);
 
-            ctx.fillStyle = '#fff';
-            ctx.font = '12px Arial';
+            ctx.fillStyle = '#fff'; ctx.font = '12px Arial';
             ctx.fillText(`${boss2.hp}/${boss2.maxHp}`, boss2.x + boss2.width / 2, boss2.y + boss2.height + 25);
         }
     }
@@ -1331,21 +1376,10 @@ function draw() {
             ctx.lineWidth = 1;
             ctx.strokeRect(btnX, btnY, btnW, btnH);
         }
-        // Move DOM score element down so it doesn't overlap the combat indicator
-        if (scoreElement) {
-            if (defaultScoreTop === null) {
-                const cs = window.getComputedStyle(scoreElement);
-                defaultScoreTop = parseInt(cs.top) || 30;
-            }
-            // place score below the indicator
-            scoreElement.style.top = (getCombatY() + canvas.offsetTop + 44) + 'px';
-        }
+        // Keep DOM score element fixed (do not move during combat)
     }
     else {
-        // restore score position when not in combat
-        if (scoreElement && defaultScoreTop !== null) {
-            scoreElement.style.top = defaultScoreTop + 'px';
-        }
+        // not in combat — no DOM score repositioning
     }
     
     // Instructions removed (UI cleaned)
