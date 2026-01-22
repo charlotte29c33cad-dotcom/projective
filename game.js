@@ -409,11 +409,7 @@ function drawShopIcon() {
 
 // Draw character on canvas
 function drawCharacter() {
-    // Character body
-    ctx.fillStyle = '#667eea';
-    ctx.fillRect(character.x, character.y, character.width, character.height);
-    
-    // Character face removed (icon moved to profile area)
+    // Character visual removed from center (UI shows profile in top-left)
     
     // Show equipped weapon icon
     if (equippedWeapon) {
