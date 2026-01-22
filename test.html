@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Canvas</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #222; color: #fff; font-family: Arial; }
+        canvas { border: 2px solid #0f0; background: #000; }
+        #log { margin-top: 20px; padding: 10px; background: #111; border: 1px solid #0f0; }
+    </style>
+</head>
+<body>
+    <h1>Canvas Test</h1>
+    <canvas id="testCanvas" width="800" height="600"></canvas>
+    <div id="log"></div>
+    
+    <script>
+        function log(msg) {
+            console.log(msg);
+            document.getElementById('log').innerHTML += msg + '<br>';
+        }
+        
+        log('Starting test...');
+        
+        const canvas = document.getElementById('testCanvas');
+        log('Canvas element: ' + (canvas ? 'OK' : 'FAIL'));
+        
+        const ctx = canvas.getContext('2d');
+        log('Context: ' + (ctx ? 'OK' : 'FAIL'));
+        
+        if (ctx) {
+            // Draw background
+            ctx.fillStyle = '#001122';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            log('Drew background');
+            
+            // Draw circle
+            ctx.fillStyle = '#ff0';
+            ctx.beginPath();
+            ctx.arc(200, 200, 50, 0, Math.PI * 2);
+            ctx.fill();
+            log('Drew yellow circle at (200, 200)');
+            
+            // Draw text
+            ctx.fillStyle = '#0f0';
+            ctx.font = 'bold 30px Arial';
+            ctx.fillText('Canvas Works!', 300, 200);
+            log('Drew text');
+            
+            // Draw rect
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(100, 300, 100, 80);
+            log('Drew red rectangle');
+            
+            log('✅ All tests passed!');
+        } else {
+            log('❌ No context - cannot draw');
+        }
+    </script>
+</body>
+</html>

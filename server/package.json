@@ -1,0 +1,16 @@
+{
+  "name": "vk-firebase-auth-server",
+  "version": "0.1.0",
+  "description": "Small Express server to verify VK tokens and mint Firebase custom tokens",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2",
+    "node-fetch": "^2.6.9",
+    "cors": "^2.8.5",
+    "firebase-admin": "^11.10.0"
+  }
+}

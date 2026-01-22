@@ -16,6 +16,7 @@
                 <div>Last save: <span id="last-save">never</span></div>
                 <div>Level: <span id="debug-level">?</span></div>
                 <button onclick="saveProgress()" style="margin-top: 5px; padding: 5px 10px;">💾 Save Now</button>
+                <button onclick="syncNow()" style="margin-top: 5px; padding: 5px 10px;">☁️ Sync Now</button>
                 <button onclick="location.reload()" style="margin-top: 5px; padding: 5px 10px;">🔄 Reload</button>
                 <button onclick="clearProgress()" style="margin-top: 5px; padding: 5px 10px;">🗑️ Clear</button>
             </div>
@@ -28,6 +29,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <!-- Game Scripts -->
     <script>

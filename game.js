@@ -1,13 +1,16 @@
 // VK Bridge initialization
 let vkBridge;
 
+// VK user id (populated by initVK)
+let vkUserId = null;
+
 // Game variables (will be initialized in Game.start)
 let canvas = null;
 let ctx = null;
 let scoreElement = null;
 
 // Temporary fillRect logger flag
-const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
+const ENABLE_FILLRECT_LOGGER = false; // set to false to disable
 
 // Firebase config (replace values provided below)
 const firebaseConfig = {
@@ -22,6 +25,86 @@ const firebaseConfig = {
 
 let firebaseApp = null;
 let database = null;
+
+// Server URL to exchange VK token for Firebase custom token (development default)
+const AUTH_SERVER_URL = window.AUTH_SERVER_URL || 'http://localhost:3000';
+
+// Set your VK App ID here (number). If 0, token exchange will be skipped.
+const VK_APP_ID = window.VK_APP_ID || 0;
+
+/**
+ * Try to obtain a VK access token via vkBridge and exchange it on your server
+ * for a Firebase Custom Token, then sign in the Firebase client.
+ * Returns true if sign-in succeeded, false otherwise.
+ */
+async function authenticateWithServer() {
+    if (!vkUserId) {
+        console.log('authenticateWithServer: no vkUserId yet');
+        return false;
+    }
+
+    if (!AUTH_SERVER_URL) {
+        console.warn('AUTH_SERVER_URL not set; skipping server auth');
+        return false;
+    }
+
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+        console.warn('Firebase Auth not available');
+        return false;
+    }
+
+    try {
+        // If already signed in, nothing to do
+        if (firebase.auth().currentUser) {
+            console.log('Already signed into Firebase');
+            return true;
+        }
+
+        // Obtain VK access token via vkBridge (requires VK App ID)
+        let vkAccessToken = null;
+        if (typeof vkBridge !== 'undefined' && VK_APP_ID) {
+            try {
+                const resp = await vkBridge.send('VKWebAppGetAuthToken', { app_id: VK_APP_ID, scope: 'offline' });
+                vkAccessToken = resp && resp.access_token;
+                console.log('Obtained VK access token');
+            } catch (e) {
+                console.warn('Failed to get VK auth token via vkBridge:', e);
+            }
+        } else {
+            console.log('VK_APP_ID not set or vkBridge unavailable; skipping VK token retrieval');
+        }
+
+        // If we don't have an access token, try server exchange with only vkUserId (server may support it)
+        const payload = { vkUserId };
+        if (vkAccessToken) payload.vkAccessToken = vkAccessToken;
+
+        const r = await fetch((AUTH_SERVER_URL || '/') + '/auth_vk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!r.ok) {
+            console.warn('Server responded with', r.status);
+            return false;
+        }
+
+        const j = await r.json();
+        if (j && j.customToken) {
+            await firebase.auth().signInWithCustomToken(j.customToken);
+            console.log('✅ Signed in to Firebase with custom token');
+            // ensure database reference reflects current auth
+            database = firebase.database();
+            return true;
+        }
+
+        console.warn('No customToken returned', j);
+        return false;
+    } catch (err) {
+        console.warn('authenticateWithServer failed', err);
+        return false;
+    }
+}
 
 function initFirebase() {
     try {
@@ -324,22 +407,77 @@ function clearProgress() {
     location.reload();
 }
 
+// Manual sync: authenticate with server (get custom token) then save/load progress
+async function syncNow() {
+    try {
+        console.log('Sync: starting authentication with server...');
+        const ok = await authenticateWithServer();
+        if (!ok) {
+            console.warn('Sync failed: authentication failed');
+            return false;
+        }
+
+        console.log('Sync: saving progress to cloud...');
+        await saveProgress();
+
+        console.log('Sync: loading progress to confirm...');
+        await loadProgress();
+
+        console.log('☁️ Sync completed');
+        updateDebugPanel();
+        return true;
+    } catch (err) {
+        console.error('Sync error:', err);
+        return false;
+    }
+}
+
+// Helper: Promise with timeout
+function promiseWithTimeout(promise, ms, errorMsg) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(errorMsg || 'Timeout')), ms)
+        )
+    ]);
+}
+
 // Initialize VK Bridge
 async function initVK() {
+    console.log('initVK: start');
     try {
         vkBridge = window.vkBridge;
-        await vkBridge.send('VKWebAppInit');
-        console.log('VK Bridge initialized');
+        console.log('initVK: vkBridge =', vkBridge);
+        if (!vkBridge) {
+            console.warn('VK Bridge not available (not running inside VK app)');
+            vkUserId = 'local_' + Date.now();
+            console.log('initVK: assigned fallback ID:', vkUserId);
+            return;
+        }
+        console.log('initVK: calling VKWebAppInit...');
+        await promiseWithTimeout(
+            vkBridge.send('VKWebAppInit'),
+            2000,
+            'VKWebAppInit timeout'
+        );
+        console.log('✅ VK Bridge initialized');
         
         // Get user info
-        const user = await vkBridge.send('VKWebAppGetUserInfo');
+        console.log('initVK: calling VKWebAppGetUserInfo...');
+        const user = await promiseWithTimeout(
+            vkBridge.send('VKWebAppGetUserInfo'),
+            2000,
+            'VKWebAppGetUserInfo timeout'
+        );
         vkUserId = user.id; // Save user ID for cloud saves
         console.log('User:', user.first_name, 'ID:', vkUserId);
     } catch (error) {
-        console.error('VK Bridge error:', error);
+        console.warn('VK Bridge error (running in browser, not VK app):', error.message || error);
         // Generate fallback ID if VK fails
         vkUserId = 'local_' + Date.now();
+        console.log('Using fallback user ID:', vkUserId);
     }
+    console.log('initVK: complete, vkUserId =', vkUserId);
 }
 
 // Setup canvas size
@@ -1621,12 +1759,28 @@ window.Game.start = function() {
     }
     document.addEventListener('keydown', _onKeydown);
 
-    // Initialize Firebase and VK, then load progress (cloud or local)
+    // Initialize Firebase and VK, then try server auth and load progress (cloud or local)
+    console.log('Step 1: Initialize Firebase...');
     initFirebase();
+    console.log('Step 2: Initialize VK...');
     initVK()
-        .then(() => loadProgress())
-        .catch(() => loadProgress())
         .then(() => {
+            console.log('Step 3: Try server auth...');
+            return authenticateWithServer().catch((err) => {
+                console.warn('Server auth failed:', err);
+                return false;
+            });
+        })
+        .catch((err) => {
+            console.warn('VK init failed:', err);
+            return false;
+        })
+        .then(() => {
+            console.log('Step 4: Load progress...');
+            return loadProgress();
+        })
+        .then(() => {
+            console.log('Step 5: Setup canvas and start game...');
             setupCanvas();
             updateScore();
             updateDebugPanel();
@@ -1640,8 +1794,11 @@ window.Game.start = function() {
 
             // Start loop
             window.__vk_running = true;
-            console.log('Starting game loop...');
+            console.log('✅ Starting game loop...');
             if (ctx) gameLoop();
+        })
+        .catch((err) => {
+            console.error('❌ Game initialization failed:', err);
         });
     // Note: game loop starts after loadProgress completes
 };
@@ -1663,8 +1820,24 @@ window.Game.stop = function() {
 
 // Auto-start on load
 window.addEventListener('load', () => {
-    if (window.Game && typeof window.Game.start === 'function') window.Game.start();
+    console.log('window.load event fired');
+    if (window.Game && typeof window.Game.start === 'function') {
+        console.log('Calling Game.start()...');
+        window.Game.start();
+    } else {
+        console.error('Game.start() not found!');
+    }
 });
+
+// If document already loaded, start immediately
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    console.log('Document already loaded, starting immediately...');
+    setTimeout(() => {
+        if (window.Game && typeof window.Game.start === 'function') {
+            window.Game.start();
+        }
+    }, 100);
+}
 
 window.addEventListener('resize', () => {
     setupCanvas();
