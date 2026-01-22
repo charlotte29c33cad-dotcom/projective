@@ -1,32 +1,13 @@
 // VK Bridge initialization
 let vkBridge;
 
-// Game variables
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas ? canvas.getContext('2d') : null;
+// Game variables (will be initialized in Game.start)
+let canvas = null;
+let ctx = null;
+let scoreElement = null;
 
-// Temporary fillRect logger (toggle with ENABLE_FILLRECT_LOGGER)
+// Temporary fillRect logger flag
 const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
-if (ENABLE_FILLRECT_LOGGER && ctx) {
-    (function() {
-        const _origFillRect = ctx.fillRect.bind(ctx);
-        ctx.fillRect = function(x, y, w, h) {
-            try {
-                console.log('[FILLRECT]', { x, y, w, h });
-                // small stack snippet to identify caller
-                const stack = (new Error()).stack || '';
-                const lines = stack.split('\n').slice(2, 6).map(l => l.trim()).join(' | ');
-                console.log('[FILLRECT STACK]', lines);
-            } catch (e) {
-                // ignore logging errors
-            }
-            return _origFillRect(x, y, w, h);
-        };
-        console.log('FillRect logger enabled');
-    })();
-}
-
-const scoreElement = document.getElementById('score');
 
 // Load background image
 const bgImage = new Image();
@@ -152,8 +133,8 @@ let shopItems = [
 
 let equippedWeapon = null;
 
-// Save progress to localStorage
-function saveProgress() {
+// Save progress to cloud (Firebase) and localStorage
+async function saveProgress() {
     const progress = {
         character: {
             level: character.level,
@@ -175,28 +156,64 @@ function saveProgress() {
         equippedWeaponId: equippedWeapon ? equippedWeapon.id : null,
         timestamp: Date.now()
     };
+    
+    // Save to localStorage (fallback)
     try {
         localStorage.setItem('vk_game_progress', JSON.stringify(progress));
-        console.log('💾 Progress saved!', { level: character.level, gold: playerGold });
-        updateDebugPanel();
-        return true;
     } catch (error) {
-        console.error('❌ Save failed:', error);
-        alert('Ошибка сохранения: ' + error.message);
-        return false;
+        console.warn('localStorage save failed:', error);
     }
+    
+    // Save to cloud if user ID available
+    if (database && vkUserId) {
+        try {
+            await database.ref(`players/${vkUserId}`).set(progress);
+            console.log('☁️ Progress saved to cloud!', { level: character.level, gold: playerGold });
+        } catch (error) {
+            console.warn('Cloud save failed:', error);
+        }
+    } else {
+        console.log('💾 Progress saved locally!', { level: character.level, gold: playerGold });
+    }
+    
+    updateDebugPanel();
+    return true;
 }
 
-// Load progress from localStorage
-function loadProgress() {
-    const saved = localStorage.getItem('vk_game_progress');
-    if (!saved) {
-        console.log('ℹ️ No saved progress found. Starting new game.');
-        return false;
+// Load progress from cloud (Firebase) or localStorage
+async function loadProgress() {
+    let progress = null;
+    
+    // Try cloud first if user ID available
+    if (database && vkUserId) {
+        try {
+            const snapshot = await database.ref(`players/${vkUserId}`).once('value');
+            if (snapshot.exists()) {
+                progress = snapshot.val();
+                console.log('☁️ Progress loaded from cloud!');
+            }
+        } catch (error) {
+            console.warn('Cloud load failed:', error);
+        }
+    }
+    
+    // Fallback to localStorage
+    if (!progress) {
+        const saved = localStorage.getItem('vk_game_progress');
+        if (!saved) {
+            console.log('ℹ️ No saved progress found. Starting new game.');
+            return false;
+        }
+        try {
+            progress = JSON.parse(saved);
+            console.log('💾 Progress loaded from localStorage');
+        } catch (error) {
+            console.error('❌ Failed to parse localStorage:', error);
+            return false;
+        }
     }
     
     try {
-        const progress = JSON.parse(saved);
         
         // Restore character
         character.level = progress.character.level;
@@ -290,9 +307,12 @@ async function initVK() {
         
         // Get user info
         const user = await vkBridge.send('VKWebAppGetUserInfo');
-        console.log('User:', user.first_name);
+        vkUserId = user.id; // Save user ID for cloud saves
+        console.log('User:', user.first_name, 'ID:', vkUserId);
     } catch (error) {
         console.error('VK Bridge error:', error);
+        // Generate fallback ID if VK fails
+        vkUserId = 'local_' + Date.now();
     }
 }
 
@@ -1539,6 +1559,32 @@ function _onKeydown(e) {
 window.Game = window.Game || {};
 window.Game.start = function() {
     console.log('Game.start()');
+    
+    // Initialize DOM elements
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas ? canvas.getContext('2d') : null;
+    scoreElement = document.getElementById('score');
+    
+    // Enable fillRect logger if needed
+    if (ENABLE_FILLRECT_LOGGER && ctx) {
+        (function() {
+            const _origFillRect = ctx.fillRect.bind(ctx);
+            ctx.fillRect = function(x, y, w, h) {
+                try {
+                    console.log('[FILLRECT]', { x, y, w, h });
+                    // small stack snippet to identify caller
+                    const stack = (new Error()).stack || '';
+                    const lines = stack.split('\n').slice(2, 6).map(l => l.trim()).join(' | ');
+                    console.log('[FILLRECT STACK]', lines);
+                } catch (e) {
+                    // ignore logging errors
+                }
+                return _origFillRect(x, y, w, h);
+            };
+            console.log('FillRect logger enabled');
+        })();
+    }
+    
     console.log('Canvas:', canvas);
     console.log('Context:', ctx);
 
