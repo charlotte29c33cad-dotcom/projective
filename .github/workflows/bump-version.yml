@@ -1,5 +1,4 @@
 name: Bump version.json on push
-
 on:
   push:
     branches: [ main ]
