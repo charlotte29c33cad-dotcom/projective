@@ -23,7 +23,19 @@ try {
   console.error('Failed to initialize Firebase Admin:', err);
 }
 
-app.get('/health', (req, res) => res.json({ ok: true }));
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    service: 'VK Game Auth Server',
+    endpoints: {
+      health: '/health',
+      auth: 'POST /auth_vk'
+    }
+  });
+});
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // POST /auth_vk
 // Body: { vkUserId: string|number, vkAccessToken: string }
