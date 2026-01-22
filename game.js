@@ -27,10 +27,10 @@ let firebaseApp = null;
 let database = null;
 
 // Server URL to exchange VK token for Firebase custom token (development default)
-const AUTH_SERVER_URL = window.AUTH_SERVER_URL || 'http://localhost:3000';
+const AUTH_SERVER_URL = window.AUTH_SERVER_URL || 'https://projective-hwvf.onrender.com';
 
 // Set your VK App ID here (number). If 0, token exchange will be skipped.
-const VK_APP_ID = window.VK_APP_ID || 0;
+const VK_APP_ID = window.VK_APP_ID || 54429717;
 
 /**
  * Try to obtain a VK access token via vkBridge and exchange it on your server
