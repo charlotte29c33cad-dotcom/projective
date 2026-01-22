@@ -9,6 +9,32 @@ let scoreElement = null;
 // Temporary fillRect logger flag
 const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
 
+// Firebase config (replace values provided below)
+const firebaseConfig = {
+  apiKey: "AIzaSyB5TdSNHSZYX_Rh_P2Bz-VjRd6DRrCHVQ",
+  authDomain: "vkontakteproject-c6c76.firebaseapp.com",
+  databaseURL: "https://vkontakteproject-c6c76-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "vkontakteproject-c6c76",
+  storageBucket: "vkontakteproject-c6c76.firebasestorage.app",
+  messagingSenderId: "545568131523",
+  appId: "1:545568131523:web:2dfad38145259e65bd9576"
+};
+
+let firebaseApp = null;
+let database = null;
+
+function initFirebase() {
+    try {
+        if (typeof firebase !== 'undefined' && !firebaseApp) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            console.log('✅ Firebase initialized');
+        }
+    } catch (e) {
+        console.warn('Firebase init error', e);
+    }
+}
+
 // Load background image
 const bgImage = new Image();
 bgImage.src = 'images/Postapocalypse.jpg';
@@ -1595,23 +1621,29 @@ window.Game.start = function() {
     }
     document.addEventListener('keydown', _onKeydown);
 
-    initVK();
-    loadProgress(); // Load saved progress
-    setupCanvas();
-    updateScore();
-    updateDebugPanel();
+    // Initialize Firebase and VK, then load progress (cloud or local)
+    initFirebase();
+    initVK()
+        .then(() => loadProgress())
+        .catch(() => loadProgress())
+        .then(() => {
+            setupCanvas();
+            updateScore();
+            updateDebugPanel();
 
-    // Show debug panel for 5 seconds, then hide
-    const debugPanel = document.getElementById('debug-panel');
-    if (debugPanel) {
-        debugPanel.style.display = 'block';
-        setTimeout(() => { debugPanel.style.display = 'none'; }, 5000);
-    }
+            // Show debug panel briefly
+            const debugPanel = document.getElementById('debug-panel');
+            if (debugPanel) {
+                debugPanel.style.display = 'block';
+                setTimeout(() => { debugPanel.style.display = 'none'; }, 5000);
+            }
 
-    // Start loop
-    window.__vk_running = true;
-    console.log('Starting game loop...');
-    if (ctx) gameLoop();
+            // Start loop
+            window.__vk_running = true;
+            console.log('Starting game loop...');
+            if (ctx) gameLoop();
+        });
+    // Note: game loop starts after loadProgress completes
 };
 
 window.Game.stop = function() {
