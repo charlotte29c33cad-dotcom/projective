@@ -6,7 +6,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
 
 // Temporary fillRect logger (toggle with ENABLE_FILLRECT_LOGGER)
-const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
+const ENABLE_FILLRECT_LOGGER = false; // set to true to enable
 if (ENABLE_FILLRECT_LOGGER && ctx) {
     (function() {
         const _origFillRect = ctx.fillRect.bind(ctx);
