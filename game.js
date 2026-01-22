@@ -4,6 +4,28 @@ let vkBridge;
 // Game variables
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
+
+// Temporary fillRect logger (toggle with ENABLE_FILLRECT_LOGGER)
+const ENABLE_FILLRECT_LOGGER = true; // set to false to disable
+if (ENABLE_FILLRECT_LOGGER && ctx) {
+    (function() {
+        const _origFillRect = ctx.fillRect.bind(ctx);
+        ctx.fillRect = function(x, y, w, h) {
+            try {
+                console.log('[FILLRECT]', { x, y, w, h });
+                // small stack snippet to identify caller
+                const stack = (new Error()).stack || '';
+                const lines = stack.split('\n').slice(2, 6).map(l => l.trim()).join(' | ');
+                console.log('[FILLRECT STACK]', lines);
+            } catch (e) {
+                // ignore logging errors
+            }
+            return _origFillRect(x, y, w, h);
+        };
+        console.log('FillRect logger enabled');
+    })();
+}
+
 const scoreElement = document.getElementById('score');
 
 // Load background image
@@ -1516,59 +1538,84 @@ function getMousePos(evt) {
     };
 }
 
-// Event listeners
-if (canvas) {
-    canvas.addEventListener('click', (e) => {
-        const pos = getMousePos(e);
-        handleCanvasClick(pos.x, pos.y);
-    });
-
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        const pos = {
-            x: (touch.clientX - rect.left) * (canvas.width / rect.width),
-            y: (touch.clientY - rect.top) * (canvas.height / rect.height)
-        };
-        handleCanvasClick(pos.x, pos.y);
-    });
+// Event handler functions (registered by Game.start)
+function _onCanvasClick(e) {
+    const pos = getMousePos(e);
+    handleCanvasClick(pos.x, pos.y);
 }
 
-// Initialize
-window.addEventListener('load', () => {
-    console.log('Game loading...');
+function _onCanvasTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const pos = {
+        x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+        y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+    };
+    handleCanvasClick(pos.x, pos.y);
+}
+
+function _onKeydown(e) {
+    if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') {
+        const panel = document.getElementById('debug-panel');
+        if (panel) {
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') updateDebugPanel();
+        }
+    }
+}
+
+// Initialize control (start/stop) to allow runtime reloads
+window.Game = window.Game || {};
+window.Game.start = function() {
+    console.log('Game.start()');
     console.log('Canvas:', canvas);
     console.log('Context:', ctx);
-    
+
+    // Attach event listeners
+    if (canvas) {
+        canvas.addEventListener('click', _onCanvasClick);
+        canvas.addEventListener('touchstart', _onCanvasTouch, { passive: false });
+    }
+    document.addEventListener('keydown', _onKeydown);
+
     initVK();
     loadProgress(); // Load saved progress
     setupCanvas();
     updateScore();
     updateDebugPanel();
-    
+
     // Show debug panel for 5 seconds, then hide
     const debugPanel = document.getElementById('debug-panel');
     if (debugPanel) {
         debugPanel.style.display = 'block';
-        setTimeout(() => {
-            debugPanel.style.display = 'none';
-        }, 5000);
+        setTimeout(() => { debugPanel.style.display = 'none'; }, 5000);
     }
-    
-    // Toggle debug panel with 'D' key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') {
-            const panel = document.getElementById('debug-panel');
-            if (panel) {
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                if (panel.style.display === 'block') updateDebugPanel();
-            }
-        }
-    });
-    
+
+    // Start loop
+    window.__vk_running = true;
     console.log('Starting game loop...');
     if (ctx) gameLoop();
+};
+
+window.Game.stop = function() {
+    console.log('Game.stop()');
+    window.__vk_running = false;
+    if (window.__vk_raf_id) cancelAnimationFrame(window.__vk_raf_id);
+
+    // Remove listeners
+    if (canvas) {
+        try { canvas.removeEventListener('click', _onCanvasClick); } catch (e) {}
+        try { canvas.removeEventListener('touchstart', _onCanvasTouch); } catch (e) {}
+    }
+    try { document.removeEventListener('keydown', _onKeydown); } catch (e) {}
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel) debugPanel.style.display = 'none';
+};
+
+// Auto-start on load
+window.addEventListener('load', () => {
+    if (window.Game && typeof window.Game.start === 'function') window.Game.start();
 });
 
 window.addEventListener('resize', () => {

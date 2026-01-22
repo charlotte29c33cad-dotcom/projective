@@ -26,6 +26,41 @@
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     
     <!-- Game Scripts -->
+    <script>
+    // Version polling: checks version.json and reloads game.js when version changes
+    (function(){
+        const POLL_INTERVAL = 10000;
+        let currentVersion = null;
+        async function checkVersion(){
+            try{
+                const r = await fetch('version.json', { cache: 'no-cache' });
+                if(!r.ok) return;
+                const j = await r.json();
+                if(!currentVersion){ currentVersion = j.version; return; }
+                if(j.version !== currentVersion){
+                    console.log('New version detected', j.version);
+                    currentVersion = j.version;
+                    if(window.Game && typeof window.Game.stop === 'function'){
+                        try{ window.Game.stop(); }catch(e){console.warn(e)}
+                    }
+                    const s = document.createElement('script');
+                    s.src = 'game.js?v=' + encodeURIComponent(j.version);
+                    s.onload = function(){
+                        console.log('New game.js loaded');
+                        if(window.Game && typeof window.Game.start === 'function'){
+                            window.Game.start();
+                        } else {
+                            location.reload();
+                        }
+                    };
+                    document.body.appendChild(s);
+                }
+            }catch(e){ console.warn('version check failed', e); }
+        }
+        setInterval(checkVersion, POLL_INTERVAL);
+        checkVersion();
+    })();
+    </script>
     <script src="game.js"></script>
 </body>
 </html>
