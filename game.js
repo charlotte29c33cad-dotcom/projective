@@ -992,7 +992,9 @@ function useHealthPotion() {
 
 // Buy item from shop
 function buyItem(item) {
-    if (playerGold < item.price) return;
+    if (playerGold < item.price) {
+        return;
+    }
 
     // Purchase
     playerGold -= item.price;
@@ -1615,15 +1617,29 @@ function handleCanvasClick(x, y) {
         
         shopItems.forEach((item, index) => {
             const itemY = startY + index * itemHeight;
+            const btnX = panelX + panelWidth - 140;
+            const btnY = itemY + 65;
             
-            // Buy button (allow buying consumables multiple times)
-            if (playerGold >= item.price &&
-                x >= panelX + panelWidth - 140 && x <= panelX + panelWidth - 20 &&
-                y >= itemY + 65 && y <= itemY + 100) {
-                buyItem(item);
+            // Buy button - only if not owned (for non-consumables) or always for consumables
+            if (item.type === 'consumable') {
+                // Consumables can be bought multiple times
+                if (playerGold >= item.price &&
+                    x >= panelX + panelWidth - 140 && x <= panelX + panelWidth - 20 &&
+                    y >= itemY + 65 && y <= itemY + 100) {
+                    buyItem(item);
+                    return;
+                }
+            } else {
+                // Weapons can only be bought once
+                if (!item.owned && playerGold >= item.price &&
+                    x >= panelX + panelWidth - 140 && x <= panelX + panelWidth - 20 &&
+                    y >= itemY + 65 && y <= itemY + 100) {
+                    buyItem(item);
+                    return;
+                }
             }
             
-            // Equip button for weapons
+            // Equip button for weapons (only shown when owned)
             if (item.owned && item.type === 'weapon' &&
                 x >= panelX + panelWidth - 140 && x <= panelX + panelWidth - 40 &&
                 y >= itemY + 65 && y <= itemY + 95) {
