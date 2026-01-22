@@ -1496,7 +1496,12 @@ function handleCanvasClick(x, y) {
 // Update score display
 function updateScore() {
     if (!scoreElement) return;
-    scoreElement.textContent = `Уровень: ${character.level} | Опыт: ${character.exp}/${character.expToNextLevel} | Золото: ${playerGold} 💰`;
+    // compact HTML structure for nicer styling
+    scoreElement.innerHTML = `
+        <span class="score-left">Ур. <strong>${character.level}</strong></span>
+        <span class="score-mid">${character.exp}/${character.expToNextLevel} EXP</span>
+        <span class="score-right"><span class="gold">💰 ${playerGold}</span></span>
+    `;
 }
 
 // Get mouse position relative to canvas
